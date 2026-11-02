@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.superaccounting.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>Super Accounting</name>
+    <description>Super Accounting (सुपर अकाउंटिंग) - Smart Voice &amp; Live Cloud Accounting Software</description>
+    <author email="support@superaccounting.com">Super Accounting Team</author>
+    <content src="index.html" />
+
+    <icon src="assets/icon.png" />
+
+    <!-- Full Network & Origin Access -->
+    <access origin="*" />
+    <allow-navigation href="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+
+    <platform name="android">
+        <allow-intent href="market:*" />
+        
+        <!-- Enable Cleartext HTTP traffic for local Wi-Fi IP (10.x.x.x, 192.168.x.x) -->
+        <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
+            <application android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config" />
+        </edit-config>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+            <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+        </config-file>
+
+        <resource-file src="network_security_config.xml" target="app/src/main/res/xml/network_security_config.xml" />
+    </platform>
+
+    <plugin name="cordova-plugin-whitelist" spec="^1.3.5" />
+</widget>
