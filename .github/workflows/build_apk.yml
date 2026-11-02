@@ -40,50 +40,64 @@ jobs:
 
       - name: Build Super Accounting Android APK
         run: |
+          # 1. Remove any conflicting old config.xml from root so Cordova doesn't get confused
+          rm -f config.xml package.json package-lock.json network_security_config.xml
+          rm -f www/config.xml Super_Accounting_Android_App/config.xml
+
           npm install -g cordova
           cordova create super_apk com.superaccounting.app "Super Accounting"
           
+          # 2. Copy web files into super_apk/www/
           if [ -d "www" ]; then
             cp -r www/* super_apk/www/
           elif [ -d "Super_Accounting_Android_App/www" ]; then
             cp -r Super_Accounting_Android_App/www/* super_apk/www/
+          elif [ -f "index.html" ]; then
+            cp -f index.html super_apk/www/
           fi
+          rm -f super_apk/www/config.xml
           
+          # 3. Copy custom logo/assets into super_apk/www/assets/
+          mkdir -p super_apk/www/assets
           if [ -d "assets" ]; then
-            mkdir -p super_apk/www/assets
-            cp -r assets/* super_apk/www/assets/
+            cp -r assets/* super_apk/www/assets/ 2>/dev/null || true
           elif [ -d "Super_Accounting_Android_App/assets" ]; then
-            mkdir -p super_apk/www/assets
-            cp -r Super_Accounting_Android_App/assets/* super_apk/www/assets/
+            cp -r Super_Accounting_Android_App/assets/* super_apk/www/assets/ 2>/dev/null || true
+          fi
+          if [ -f "icon.png" ]; then
+            cp -f icon.png super_apk/www/assets/icon.png
           fi
 
           cd super_apk
           
-          if [ -f "www/assets/icon.png" ]; then
-            sed -i 's|</widget>|  <icon src="www/assets/icon.png" />\n  <allow-intent href="tel:*" />\n  <allow-navigation href="*" />\n  <access origin="*" />\n</widget>|g' config.xml
-          else
-            sed -i 's|</widget>|  <allow-intent href="tel:*" />\n  <allow-navigation href="*" />\n  <access origin="*" />\n</widget>|g' config.xml
-          fi
+          # 4. Allow phone call (tel:) and internet access in clean config.xml
+          sed -i 's|</widget>|  <allow-intent href="tel:*" />\n  <allow-navigation href="*" />\n  <access origin="*" />\n</widget>|g' config.xml
           
           cordova platform add android@13.0.0
 
-          # कस्टम ऐप लोगो सेट करें
+          # 5. Apply Custom App Logo to Android Launcher Icons
+          ICON_FILE=""
           if [ -f "www/assets/icon.png" ]; then
+            ICON_FILE="www/assets/icon.png"
+          elif [ -f "www/icon.png" ]; then
+            ICON_FILE="www/icon.png"
+          fi
+          if [ -n "$ICON_FILE" ]; then
             for dir in platforms/android/app/src/main/res/mipmap-*; do
               if [ -d "$dir" ]; then
-                cp -f www/assets/icon.png "$dir/ic_launcher.png" 2>/dev/null || true
-                cp -f www/assets/icon.png "$dir/ic_launcher_round.png" 2>/dev/null || true
-                cp -f www/assets/icon.png "$dir/ic_launcher_foreground.png" 2>/dev/null || true
+                cp -f "$ICON_FILE" "$dir/ic_launcher.png" 2>/dev/null || true
+                cp -f "$ICON_FILE" "$dir/ic_launcher_round.png" 2>/dev/null || true
+                cp -f "$ICON_FILE" "$dir/ic_launcher_foreground.png" 2>/dev/null || true
               fi
             done
             rm -rf platforms/android/app/src/main/res/mipmap-anydpi-v26
           fi
           
-          # माइक, कॉल और इंटरनेट परमिशन जोड़ें
+          # 6. Inject Microphone, Call & Cleartext Permissions into AndroidManifest.xml
           MANIFEST="platforms/android/app/src/main/AndroidManifest.xml"
           sed -i 's|<application|<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.CALL_PHONE" />\n    <application android:usesCleartextTraffic="true"|g' "$MANIFEST"
 
-          # Native Android Google Speech Recognizer Bridge जोड़ें
+          # 7. Inject Native Android Google Speech Recognizer Bridge into MainActivity.java
           MAIN_ACT="platforms/android/app/src/main/java/com/superaccounting/app/MainActivity.java"
           cat << 'EOF' > "$MAIN_ACT"
           package com.superaccounting.app;
