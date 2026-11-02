@@ -40,7 +40,7 @@ jobs:
 
       - name: Build Super Accounting Android APK
         run: |
-          # 1. Remove any conflicting old config.xml from root so Cordova doesn't get confused
+          # 1. Remove any conflicting old config.xml from root
           rm -f config.xml package.json package-lock.json network_security_config.xml
           rm -f www/config.xml Super_Accounting_Android_App/config.xml
 
@@ -75,22 +75,26 @@ jobs:
           
           cordova platform add android@13.0.0
 
-          # 5. Apply Custom App Logo to Android Launcher Icons
+          # 5. Apply Custom App Logo cleanly (Remove v26 XML folders first to avoid duplicate resource error)
           ICON_FILE=""
           if [ -f "www/assets/icon.png" ]; then
             ICON_FILE="www/assets/icon.png"
           elif [ -f "www/icon.png" ]; then
             ICON_FILE="www/icon.png"
+          elif [ -f "www/assets/logo.png" ]; then
+            ICON_FILE="www/assets/logo.png"
           fi
           if [ -n "$ICON_FILE" ]; then
+            rm -rf platforms/android/app/src/main/res/mipmap-*-v26
+            rm -rf platforms/android/app/src/main/res/drawable-v24
             for dir in platforms/android/app/src/main/res/mipmap-*; do
               if [ -d "$dir" ]; then
+                rm -f "$dir"/*.xml
                 cp -f "$ICON_FILE" "$dir/ic_launcher.png" 2>/dev/null || true
                 cp -f "$ICON_FILE" "$dir/ic_launcher_round.png" 2>/dev/null || true
                 cp -f "$ICON_FILE" "$dir/ic_launcher_foreground.png" 2>/dev/null || true
               fi
             done
-            rm -rf platforms/android/app/src/main/res/mipmap-anydpi-v26
           fi
           
           # 6. Inject Microphone, Call & Cleartext Permissions into AndroidManifest.xml
