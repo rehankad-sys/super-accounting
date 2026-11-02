@@ -33,7 +33,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Set up Node.js (For Cordova Standalone APK)
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -43,25 +43,22 @@ jobs:
           npm install -g cordova
           cordova create super_apk com.superaccounting.app "Super Accounting"
           
-          if [ -d "Super_Accounting_Release/Super_Accounting_Android_App/www" ]; then
-            cp -r Super_Accounting_Release/Super_Accounting_Android_App/www/* super_apk/www/
-          elif [ -d "www" ]; then
+          if [ -d "www" ]; then
             cp -r www/* super_apk/www/
-          elif [ -d "SK_Traders_Android_App/www" ]; then
-            cp -r SK_Traders_Android_App/www/* super_apk/www/
+          elif [ -d "Super_Accounting_Android_App/www" ]; then
+            cp -r Super_Accounting_Android_App/www/* super_apk/www/
           fi
           
-          if [ -d "Super_Accounting_Release/Super_Accounting_Android_App/assets" ]; then
-            mkdir -p super_apk/www/assets
-            cp -r Super_Accounting_Release/Super_Accounting_Android_App/assets/* super_apk/www/assets/
-          elif [ -d "assets" ]; then
+          if [ -d "assets" ]; then
             mkdir -p super_apk/www/assets
             cp -r assets/* super_apk/www/assets/
+          elif [ -d "Super_Accounting_Android_App/assets" ]; then
+            mkdir -p super_apk/www/assets
+            cp -r Super_Accounting_Android_App/assets/* super_apk/www/assets/
           fi
 
           cd super_apk
           
-          # Configure App Icon, Phone Call (tel:) & Internet Access in config.xml
           if [ -f "www/assets/icon.png" ]; then
             sed -i 's|</widget>|  <icon src="www/assets/icon.png" />\n  <allow-intent href="tel:*" />\n  <allow-navigation href="*" />\n  <access origin="*" />\n</widget>|g' config.xml
           else
@@ -70,7 +67,7 @@ jobs:
           
           cordova platform add android@13.0.0
 
-          # Replace Default Android Launcher Icons with Custom Super Accounting Logo
+          # कस्टम ऐप लोगो सेट करें
           if [ -f "www/assets/icon.png" ]; then
             for dir in platforms/android/app/src/main/res/mipmap-*; do
               if [ -d "$dir" ]; then
@@ -82,11 +79,11 @@ jobs:
             rm -rf platforms/android/app/src/main/res/mipmap-anydpi-v26
           fi
           
-          # 1. Inject Microphone, Call & Cleartext Permissions into AndroidManifest.xml
+          # माइक, कॉल और इंटरनेट परमिशन जोड़ें
           MANIFEST="platforms/android/app/src/main/AndroidManifest.xml"
           sed -i 's|<application|<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.CALL_PHONE" />\n    <application android:usesCleartextTraffic="true"|g' "$MANIFEST"
 
-          # 2. Inject Native Android Google Speech Recognizer Bridge into MainActivity.java
+          # Native Android Google Speech Recognizer Bridge जोड़ें
           MAIN_ACT="platforms/android/app/src/main/java/com/superaccounting/app/MainActivity.java"
           cat << 'EOF' > "$MAIN_ACT"
           package com.superaccounting.app;
@@ -168,7 +165,6 @@ jobs:
           }
           EOF
 
-          # 3. Auto-Grant WebView Audio Recording in SystemWebChromeClient.java
           CHROME_CLIENT="platforms/android/CordovaLib/src/org/apache/cordova/engine/SystemWebChromeClient.java"
           if [ -f "$CHROME_CLIENT" ]; then
             sed -i 's|public void onPermissionRequest(final PermissionRequest request) {|public void onPermissionRequest(final PermissionRequest request) {\n        request.grant(request.getResources());\n        if (true) return;|g' "$CHROME_CLIENT"
